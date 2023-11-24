@@ -15,6 +15,7 @@
   "author": "Suraj Shah",
   "license": "ISC",
   "devDependencies": {
+    "morgan": "^1.10.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.1.0"
   },
