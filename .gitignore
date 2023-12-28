@@ -120,5 +120,5 @@ dist
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
 
-
+/public/imgs
 pass.txt

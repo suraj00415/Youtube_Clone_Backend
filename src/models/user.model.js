@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
             required: true,
         },
         coverImage: {
-            type: String,
+            type: String, //cloudinary url
         },
         watchHistory: {
             type: Schema.Types.ObjectId,
@@ -41,15 +41,14 @@ const userSchema = new mongoose.Schema(
             required: [true, "Password is required!"],
         },
         refreshToken: {
-            type: String
-        }
+            type: String,
+        },
     },
     { timestamps: true }
 );
 
 userSchema.pre("save", async function (next) {
-    if (!this.password.isModified("password")) return next();
-
+    if (!this.isModified("password")) return next();
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
