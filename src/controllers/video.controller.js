@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -77,8 +77,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
             ],
         ]);
     } else {
+        const isValidUser = isValidObjectId(userId);
+        if (!isValidUser) throw new ApiError(400, "Invalid UserId");
         const user = await User.findById(userId);
-        if (!user) throw new ApiError(400, "Invalid User Id");
+        if (!user) throw new ApiError(404, "User Not Found");
         videopage = Video.aggregate([
             [
                 {
@@ -151,7 +153,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
     const userID = req.user?._id;
-    if (!userID) throw new ApiError(401, "User is Invalid");
+    if (!userID) throw new ApiError(401, "Invalid UserId");
     if (!title && !description)
         throw new ApiError(400, "Title and description required");
     const videoFilePath = req.files?.videoFile[0]?.path;
@@ -175,10 +177,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
     const videoCreated = await Video.findById(video?._id);
     if (!videoCreated) throw new ApiError(400, "Video is not created");
-    if (videoCreated) {
-        deleteFile(videoFileName);
-        deleteFile(thumbnailName);
-    }
+    deleteFile(videoFileName);
+    deleteFile(thumbnailName);
     res.status(201).json(
         new ApiResponse(201, "Video Created Successfully", videoCreated)
     );
@@ -186,8 +186,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
-    //TODO: get video by id
-    if (!videoId) throw new ApiError(400, "Video Id is Required");
+    const isValidVideoId = isValidObjectId(videoId);
+    if (!isValidVideoId) throw new ApiError(400, "Invalid VideoId");
     const video = await Video.aggregate([
         {
             $match: {
@@ -212,22 +212,23 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
         },
     ]);
-    if (!video) throw new ApiError(400, "Invalid VideoId");
+    if (!video.length) throw new ApiError(404, "Video Not Found");
     return res
         .status(200)
         .json(new ApiResponse(200, "Video Fetched Successfully", video));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params;
     //TODO: update video details like title, description, thumbnail
+    const { videoId } = req.params;
+    const isValidVideoId = isValidObjectId(videoId);
+    if (!isValidVideoId) throw new ApiError(400, "Invalid VideoID");
     const userId = req.user?._id;
-    if (!videoId) throw new ApiError(400, "Video Id must be there");
+    if (!userId) throw new ApiError(400, "Invalid User");
     const video = await Video.findById({ _id: videoId });
-    if (!video) throw new ApiError(400, "Invalid Video Id");
+    if (!video) throw new ApiError(404, "Video Not Found");
     if (video?.owner?._id.toString() !== userId.toString())
-        throw new ApiError(401, "Unauthorized Access To Delete Video");
-
+        throw new ApiError(401, "Unauthorized Access To Update Video");
     const { title, description, thumbnail } = req.body;
     if (!title && !description && !thumbnail)
         throw new ApiError(400, "Any One Fields is Required");
@@ -252,28 +253,34 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
+    const isValidVideoId = isValidObjectId(videoId);
+    if (!isValidVideoId) throw new ApiError(400, "Invalid VideoID");
     const userId = req.user?._id;
-    //TODO: delete video
-    if (!videoId) throw new ApiError(400, "Video Id must be there");
+    if (!userId) throw new ApiError(400, "Invalid User");
     const video = await Video.findById({ _id: videoId });
-    if (!video) throw new ApiError(400, "Invalid Video Id");
+    if (!video) throw new ApiError(404, "Video Not Found");
     if (video?.owner?._id.toString() !== userId.toString())
         throw new ApiError(401, "Unauthorized Access To Delete Video");
     const deletedVideo = await Video.findByIdAndDelete(videoId);
     if (!deletedVideo) throw new ApiError(500, "Unable to delete Video");
     return res
         .status(202)
-        .json(new ApiResponse(202, "Video Deleted Successfully"));
+        .json(new ApiResponse(202, "Video Deleted Successfully", deleteVideo));
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
+    const isValidVideoId = isValidObjectId(videoId);
+    if (!isValidVideoId) throw new ApiError(400, "Invalid VideoID");
     const userId = req.user?._id;
-    if (!videoId) throw new ApiError(400, "Video Id must be there");
+    if (!userId) throw new ApiError(400, "Invalid User");
     const video = await Video.findById({ _id: videoId });
-    if (!video) throw new ApiError(400, "Invalid Video Id");
+    if (!video) throw new ApiError(404, "Video Not Found");
     if (video?.owner?._id.toString() !== userId.toString())
-        throw new ApiError(401, "Unauthorized Access To Delete Video");
+        throw new ApiError(
+            401,
+            "Unauthorized Access To Change THe Publish-Status Video"
+        );
 
     const status = video.togglePublish();
     video.isPublished = status;
