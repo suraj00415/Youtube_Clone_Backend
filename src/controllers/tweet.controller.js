@@ -45,9 +45,10 @@ const createTweet = asyncHandler(async (req, res) => {
 const getUserTweets = asyncHandler(async (req, res) => {
     // TODO: get user tweets
     const { userId } = req.params;
-    if (!userId.length) throw new ApiError(400, "UserID is required");
+    const isValidId = isValidObjectId(userId);
+    if (!isValidId) throw new ApiError(400, "Invalid UserID");
     const user = await User.findById(userId);
-    if (!user) throw new ApiError(400, "Invaild UserId");
+    if (!user) throw new ApiError(404, "UserId Not Found");
     const tweet = await Tweet.aggregate([
         {
             $match: {
@@ -66,6 +67,8 @@ const updateTweet = asyncHandler(async (req, res) => {
     const { content } = req.body;
     if (!content) throw new ApiError(400, "Content Field is required");
     const { tweetId } = req.params;
+    const isValidTweetId = isValidObjectId(tweetId);
+    if (!isValidTweetId) throw new ApiError(400, "Invalid TweetId");
     const userId = req.user?._id;
     const tweet = await Tweet.findById(tweetId);
     if (userId.toString() !== tweet.owner.toString())
@@ -90,6 +93,8 @@ const deleteTweet = asyncHandler(async (req, res) => {
     //TODO: delete tweet
     const { tweetId } = req.params;
     const userId = req.user?._id;
+    const isValidTweetId = isValidObjectId(tweetId);
+    if (!isValidTweetId) throw new ApiError(400, "Invalid TweetId");
     const tweet = await Tweet.findById(tweetId);
     if (userId.toString() !== tweet.owner.toString())
         throw new ApiError(401, "Unauthorized Access To Delete The Tweet");
