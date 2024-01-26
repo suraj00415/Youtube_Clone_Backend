@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deleteFile } from "../utils/deleteFile.js";
+import { User } from "../models/user.model.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const {
@@ -76,6 +77,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
             ],
         ]);
     } else {
+        const user = await User.findById(userId);
+        if (!user) throw new ApiError(400, "Invalid User Id");
         videopage = Video.aggregate([
             [
                 {
@@ -148,7 +151,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
     const userID = req.user?._id;
-    if (!userID) throw new ApiError(400, "User is Invalid");
+    if (!userID) throw new ApiError(401, "User is Invalid");
     if (!title && !description)
         throw new ApiError(400, "Title and description required");
     const videoFilePath = req.files?.videoFile[0]?.path;
@@ -287,5 +290,10 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 });
 
 export {
-    deleteVideo, getAllVideos, getVideoById, publishAVideo, togglePublishStatus, updateVideo
+    deleteVideo,
+    getAllVideos,
+    getVideoById,
+    publishAVideo,
+    togglePublishStatus,
+    updateVideo,
 };

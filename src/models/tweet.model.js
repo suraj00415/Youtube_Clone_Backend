@@ -9,6 +9,7 @@ const tweetSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "User",
         },
+        images: [String]
     },
     {
         timestamps: true,

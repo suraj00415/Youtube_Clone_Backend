@@ -10,6 +10,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     // TODO: toggle subscription
     if (!channelId) throw new ApiError(400, "Channel Id is required");
+    if (!userId) throw new ApiError(401, "Invalid User");
     // for subscribing
     const isSubscribed = await Subscription.aggregate([
         {
@@ -19,18 +20,18 @@ const toggleSubscription = asyncHandler(async (req, res) => {
             },
         },
     ]);
-    const deletId = isSubscribed[0]?._id;
     if (isSubscribed.length) {
-        await Subscription.findByIdAndDelete(deletId);
-        if (!channelId) throw new ApiError(400, "Invalid Channel Id");
+        const deleteId = isSubscribed[0]?._id;
+        await Subscription.findByIdAndDelete(deleteId);
         return res
             .status(200)
             .json(new ApiResponse(200, "UnSubscribed Successfully"));
     } else {
-        const subscription = await Subscription.create({
+        const newSubscription = await Subscription.create({
             channel: channelId,
             subscriber: userId,
         });
+        const subscription = await Subscription.findById(newSubscription?._id);
         if (!subscription)
             throw new ApiError(500, "Subscription Unsuccessfully");
         return res
@@ -126,10 +127,10 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
-    const subscribedChannels=await Subscription.aggregate([
+    const subscribedChannels = await Subscription.aggregate([
         {
             $match: {
-                subscriber:new mongoose.Types.ObjectId(channelId),
+                subscriber: new mongoose.Types.ObjectId(channelId),
             },
         },
         {
@@ -191,9 +192,18 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
             },
         },
     ]);
-    console.log("Subscri",subscribedChannels)
-    if(!subscribedChannels.length) throw new ApiError(400,"Invalid SubscriberId")
-    return res.status(200).json(new ApiResponse(200,"User Subscribed Channels Fetched",subscribedChannels))
+    console.log("Subscri", subscribedChannels);
+    if (!subscribedChannels.length)
+        throw new ApiError(400, "Invalid SubscriberId");
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                "User Subscribed Channels Fetched",
+                subscribedChannels
+            )
+        );
 });
 
 export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
