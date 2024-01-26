@@ -71,6 +71,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     if (!isValidTweetId) throw new ApiError(400, "Invalid TweetId");
     const userId = req.user?._id;
     const tweet = await Tweet.findById(tweetId);
+    if (!tweet) throw new ApiError(404, "Tweet Not Found");
     if (userId.toString() !== tweet.owner.toString())
         throw new ApiError(401, "Unauthorized Access To Update The Tweet");
     const updatedTweet = await Tweet.findByIdAndUpdate(
@@ -96,6 +97,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
     const isValidTweetId = isValidObjectId(tweetId);
     if (!isValidTweetId) throw new ApiError(400, "Invalid TweetId");
     const tweet = await Tweet.findById(tweetId);
+    if (!tweet) throw new ApiError(404, "Tweet Not Found");
     if (userId.toString() !== tweet.owner.toString())
         throw new ApiError(401, "Unauthorized Access To Delete The Tweet");
     const deletedTweet = await Tweet.findByIdAndDelete(tweetId);

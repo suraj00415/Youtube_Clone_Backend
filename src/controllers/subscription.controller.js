@@ -8,9 +8,11 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
     const userId = req.user?._id;
-    // TODO: toggle subscription
-    if (!channelId) throw new ApiError(400, "Channel Id is required");
+    const isValidChannelId = isValidObjectId(channelId);
+    if (!isValidChannelId) throw new ApiError(400, "Invalid ChannelId ");
     if (!userId) throw new ApiError(401, "Invalid User");
+    const channel = await User.findById(channelId);
+    if (!channel) throw new ApiError(404, "Channel Not Found");
     // for subscribing
     const isSubscribed = await Subscription.aggregate([
         {
@@ -45,7 +47,10 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
-
+    const isValidChannelId = isValidObjectId(channelId);
+    if (!isValidChannelId) throw new ApiError(400, "Invalid ChannelId");
+    const channel = await User.findById(channelId);
+    if (!channel) throw new ApiError(404, "Channel Not Found");
     const listofSubscribers = await Subscription.aggregate([
         {
             $match: {
@@ -127,6 +132,10 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
+    const isValidSubscriberId = isValidObjectId(channelId);
+    if (!isValidSubscriberId) throw new ApiError(400, "Invalid SubscriberId");
+    const subscriber = await User.findById(channelId);
+    if (!subscriber) throw new ApiError(404, "Subscriber Not Found");
     const subscribedChannels = await Subscription.aggregate([
         {
             $match: {
@@ -192,9 +201,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
             },
         },
     ]);
-    console.log("Subscri", subscribedChannels);
-    if (!subscribedChannels.length)
-        throw new ApiError(400, "Invalid SubscriberId");
+    if (!subscribedChannels) throw new ApiError(400, "Invalid SubscriberId");
     return res
         .status(200)
         .json(
