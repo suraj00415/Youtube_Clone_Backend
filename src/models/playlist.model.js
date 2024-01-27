@@ -19,10 +19,17 @@ const playlistSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "User",
         },
+        isPublic: {
+            type: Boolean,
+            default: true,
+        },
     },
     {
         timestamps: true,
     }
 );
 
+playlistSchema.methods.togglePublicStatus = function () {
+    return !this.isPublic;
+};
 export const Playlist = mongoose.model("Playlist", playlistSchema);
