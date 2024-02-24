@@ -26,11 +26,7 @@ const generateAccessAndRefreshToken = async (userid) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     const { fullName, username, email, password } = req.body;
-    if (
-        [fullName, username, email, password].some(
-            (field) => field?.trim() === ""
-        )
-    ) {
+    if (!fullName || !username || !email || !password) {
         throw new ApiError(400, "All Field Are Required");
     }
     const existedUser = await User.findOne({
@@ -159,7 +155,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             incomingRefreshToken,
             process.env.REFRESH_TOKEN_SECRET
         );
-
         const user = await User.findById(decodedToken?._id);
         if (!user) throw new ApiError(400, "Invalid Refresh Token");
 
@@ -207,7 +202,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullName, email } = req.body;
-    if (!fullName || !email) {
+    if (!fullName && !email) {
         throw new ApiError(400, "All fields are required");
     }
 

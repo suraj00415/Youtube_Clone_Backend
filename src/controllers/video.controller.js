@@ -13,7 +13,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         limit = 10,
         query = "",
         sortBy = "views",
-        sortType = 1,
+        sortType = -1,
         userId,
     } = req.query;
     const options = {

@@ -8,7 +8,7 @@ import { Video } from "../models/video.model.js";
 const getVideoComments = asyncHandler(async (req, res) => {
     //TODO: get all comments for a video
     const { videoId } = req.params;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, sort = -1 } = req.query;
     const isValidVideoId = isValidObjectId(videoId);
     if (!isValidVideoId) throw new ApiError(400, "Invalid videoId");
     const video = await Video.findById(videoId);
@@ -61,6 +61,11 @@ const getVideoComments = asyncHandler(async (req, res) => {
                 },
             },
         },
+        {
+            $sort: {
+                updatedAt: Number(sort),
+            },
+        },
     ]);
     await Comment.aggregatePaginate(
         comment,
@@ -77,7 +82,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
                     .json(
                         new ApiResponse(
                             200,
-                            "Videos Fetched Successfully",
+                            "Comment Fetched Successfully",
                             results
                         )
                     );
@@ -139,7 +144,7 @@ const deleteComment = asyncHandler(async (req, res) => {
     if (!isCommentIdValid) throw new ApiError(400, "Invalid CommentId");
     const comment = await Comment.findById(commentId);
     if (!comment) throw new ApiError(404, "Comment Not Found");
-    const deletedComment = await Comment.findOneAndDelete(commentId);
+    const deletedComment = await Comment.findOneAndDelete({ _id: commentId });
     if (!deletedComment)
         throw new ApiError(500, "Something Went Wrong While Updating Comment");
     return res
@@ -147,4 +152,39 @@ const deleteComment = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, "Comment Deleted", deletedComment));
 });
 
-export { getVideoComments, addComment, updateComment, deleteComment };
+const getUserCommentOnVideoID = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    const userId = req.user?._id;
+    const isVideoIdValid = isValidObjectId(videoId);
+    if (!isVideoIdValid) throw new ApiError(400, "Invalid VideoId");
+    const video = await Video.findById(videoId);
+    if (!video) throw new ApiError(404, "Video Does Not Exists");
+    const comment = await Comment.aggregate([
+        {
+            $match: {
+                video: new mongoose.Types.ObjectId(videoId),
+                owner: new mongoose.Types.ObjectId(userId),
+            },
+        },
+    ]);
+
+    if (!comment)
+        throw new ApiError(
+            500,
+            "Something Went Wrong While Fetching User Comment On Video ID"
+        );
+    return res.json(
+        new ApiResponse(
+            200,
+            "User Comment On VideoId Fetched Successfully",
+            comment
+        )
+    );
+});
+export {
+    getVideoComments,
+    addComment,
+    updateComment,
+    deleteComment,
+    getUserCommentOnVideoID,
+};

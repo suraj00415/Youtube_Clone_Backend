@@ -359,6 +359,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
             )
         );
 });
+
 const togglePublicStatus = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
     const isValidPlaylistId = isValidObjectId(playlistId);

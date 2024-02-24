@@ -200,4 +200,112 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         );
 });
 
-export { toggleCommentLike, toggleTweetLike, toggleVideoLike, getLikedVideos };
+const getLikesByVideoId = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    const video = await Video.findById(videoId);
+    if (!video) throw new ApiError(404, "Video Not Found");
+    const like = await Like.aggregate([
+        {
+            $match: {
+                video: new mongoose.Types.ObjectId(videoId),
+            },
+        },
+        {
+            $group: {
+                _id: "$video",
+                likesCount: {
+                    $sum: 1,
+                },
+            },
+        },
+    ]);
+    if (!like)
+        throw new ApiError(
+            500,
+            "Something Went Wrong While Fetching Likes Of Video"
+        );
+    return res.json(
+        new ApiResponse(200, "Likes of Video Fetched Successfully", like)
+    );
+});
+
+const getVideosLikedByUser = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    const like = await Like.aggregate([
+        {
+            $match: {
+                video: {
+                    $exists: true,
+                },
+                likedBy: new mongoose.Types.ObjectId(userId),
+            },
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "video",
+                foreignField: "_id",
+                as: "video",
+                pipeline: [
+                    {
+                        $project: {
+                            owner: 1,
+                            views: 1,
+                            duration: 1,
+                            title: 1,
+                            thumbnail: 1,
+                        },
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        avatar: 1,
+                                        fullName: 1,
+                                        username: 1,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner",
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $addFields: {
+                video: {
+                    $first: "$video",
+                },
+            },
+        },
+    ]);
+    if (!like)
+        throw new ApiError(
+            500,
+            "Something Went Wrong While Fetching Liked Videos of User"
+        );
+    return res.json(
+        new ApiResponse(200, "Liked Video Of User Fetched Succesfully", like)
+    );
+});
+
+export {
+    toggleCommentLike,
+    toggleTweetLike,
+    toggleVideoLike,
+    getLikedVideos,
+    getLikesByVideoId,
+    getVideosLikedByUser,
+};
