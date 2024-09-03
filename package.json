@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+    "test": "echo \"E-r dotenv/config --experimental-json-modulesrror: no test specified\" && exit 1",
+    "dev": "nodemon  src/index.js"
   },
   "keywords": [
     "javasript",
